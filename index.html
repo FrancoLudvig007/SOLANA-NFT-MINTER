@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Solana NFT Minter - Web3 Vibes</title>
+    <style>
+        /* CSS3 com foco em mobile-first, responsividade, otimização de UX e ergonomia. 
+           Paleta inspirada em Solana: Roxo principal (#9945FF), Verde acento (#14F195), Preto fundo (#000000), Branco texto (#FFFFFF), Cinza sutil (#1A1A1A).
+           Uso de flexbox e grid para layouts fluidos, transições suaves para interações, e media queries para telas maiores.
+           Segredos do CSS3: Variáveis CSS para temas, clamp() para tipografia responsiva, aspect-ratio para imagens, e backdrop-filter para vibe Web3 futurista. */
+        
+        :root {
+            --primary-purple: #9945FF;
+            --accent-green: #14F195;
+            --bg-black: #000000;
+            --text-white: #FFFFFF;
+            --subtle-gray: #1A1A1A;
+            --font-size-base: clamp(16px, 2vw, 18px);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif; /* Fallback simples, otimizado para performance */
+            background-color: var(--bg-black);
+            color: var(--text-white);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-size: var(--font-size-base);
+            overflow-x: hidden; /* Previne scroll horizontal em mobile */
+        }
+
+        header {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(to bottom, var(--primary-purple), var(--subtle-gray));
+            text-align: center;
+            position: fixed;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            transition: background 0.3s ease; /* Transição suave para vibe dinâmica */
+        }
+
+        main {
+            width: 90%;
+            max-width: 600px; /* Limite para desktops, mobile-first */
+            margin: 80px auto 2rem; /* Espaço para header fixo */
+            padding: 1rem;
+            background: var(--subtle-gray);
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(153, 69, 255, 0.3); /* Sombra com tom roxo para vibe Web3 */
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: clamp(14px, 1.8vw, 16px);
+        }
+
+        input[type="file"],
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--primary-purple);
+            border-radius: 8px;
+            background: var(--bg-black);
+            color: var(--text-white);
+            font-size: var(--font-size-base);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input[type="file"]:focus,
+        input[type="text"]:focus,
+        textarea:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+            outline: none; /* Melhora acessibilidade */
+        }
+
+        button {
+            padding: 1rem;
+            background: var(--primary-purple);
+            color: var(--text-white);
+            border: none;
+            border-radius: 8px;
+            font-size: var(--font-size-base);
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover {
+            background: var(--accent-green);
+            transform: scale(1.05); /* Feedback tátil para UX */
+        }
+
+        #preview {
+            width: 100%;
+            aspect-ratio: 1 / 1; /* Mantém proporção quadrada para NFTs, CSS3 segredo */
+            border: 2px dashed var(--primary-purple);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--subtle-gray);
+            overflow: hidden;
+        }
+
+        #preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        #status {
+            text-align: center;
+            font-style: italic;
+            color: var(--accent-green);
+        }
+
+        /* Media queries para responsividade: Mobile-first, ajustes para telas maiores */
+        @media (min-width: 768px) {
+            main {
+                width: 70%;
+                max-width: 800px;
+            }
+
+            section {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 2rem;
+            }
+
+            label, input, textarea {
+                flex: 1 1 45%;
+            }
+        }
+
+        /* Otimização de performance: Evitar reflows com will-change em elementos animados */
+        button, input:focus {
+            will-change: transform, box-shadow;
+        }
+
+        /* Backdrop-filter para vibe futurista Web3 em overlays, se suportado */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px); /* CSS3 avançado */
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+        }
+    </style>
+    <!-- Bibliotecas Web3 para Solana: Usando CDNs para produção simples e otimizada. 
+         @solana/web3.js para interação com blockchain, @solana/spl-token para tokens/NFTs.
+         Para metadados, assumindo integração com Metaplex padrão (smart contract existente).
+         Em produção, configure com um RPC endpoint confiável como https://api.mainnet-beta.solana.com -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Solana NFT Minter</h1>
+        <button id="connectWallet">Conectar Wallet</button>
+        <p id="walletAddress"></p>
+    </header>
+    <main>
+        <section id="uploadSection">
+            <h2>Crie seu NFT</h2>
+            <label for="imageUpload">Suba sua Imagem:</label>
+            <input type="file" id="imageUpload" accept="image/*">
+            <div id="preview">Pré-visualização da Imagem</div>
+        </section>
+        <section id="metadataSection">
+            <label for="name">Nome do NFT:</label>
+            <input type="text" id="name" placeholder="Ex: Meu NFT Incrível">
+            
+            <label for="description">Descrição:</label>
+            <textarea id="description" placeholder="Descreva seu NFT..."></textarea>
+            
+            <label for="symbol">Símbolo (Ticker):</label>
+            <input type="text" id="symbol" placeholder="Ex: MYNFT">
+            
+            <label for="attributes">Atributos (JSON):</label>
+            <textarea id="attributes" placeholder='Ex: [{"trait_type": "Cor", "value": "Azul"}, ...]'></textarea>
+            
+            <label for="royalties">Royalties (%):</label>
+            <input type="text" id="royalties" placeholder="Ex: 5" value="5">
+        </section>
+        <button id="mintButton" disabled>Mintar NFT</button>
+        <p id="status"></p>
+    </main>
+    <div class="overlay" id="loadingOverlay">
+        <p>Processando... Aguarde.</p>
+    </div>
+
+    <script>
+        // JavaScript vanilla otimizado: Mobile-first em mente, eventos debounced para performance, 
+        // uso de async/await para legibilidade, erro handling robusto para produção.
+        // Integração com Solana: Conexão via Phantom (wallet popular), mint via SPL-Token e Metaplex metadata.
+        // Assumindo smart contract existente: Use o Token Program padrão de Solana para mintar SPL-Token como NFT (supply=1).
+        // Para metadata, upload para Arweave ou IPFS via API (ex: Pinata), então associe via Metaplex.
+        // Em produção: Use um provedor de upload seguro (ex: IPFS via Infura) e RPC rápido.
+        // Para royalties: Use creator shares no metadata.
+
+        const connectWalletBtn = document.getElementById('connectWallet');
+        const walletAddressP = document.getElementById('walletAddress');
+        const imageUpload = document.getElementById('imageUpload');
+        const preview = document.getElementById('preview');
+        const nameInput = document.getElementById('name');
+        const descriptionInput = document.getElementById('description');
+        const symbolInput = document.getElementById('symbol');
+        const attributesInput = document.getElementById('attributes');
+        const royaltiesInput = document.getElementById('royalties');
+        const mintButton = document.getElementById('mintButton');
+        const statusP = document.getElementById('status');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        let connection;
+        let walletPublicKey;
+        let imageFile;
+
+        // RPC para Solana Mainnet (produção). Para dev, mude para devnet.
+        const SOLANA_RPC = 'https://api.mainnet-beta.solana.com';
+        connection = new solanaWeb3.Connection(SOLANA_RPC, 'confirmed');
+
+        // Função para conectar wallet (Phantom como default, compatível com Solana)
+        async function connectWallet() {
+            if (window.solana && window.solana.isPhantom) {
+                try {
+                    const response = await window.solana.connect();
+                    walletPublicKey = response.publicKey;
+                    walletAddressP.textContent = `Wallet conectada: ${walletPublicKey.toString().slice(0, 10)}...`;
+                    mintButton.disabled = false;
+                    statusP.textContent = 'Wallet conectada com sucesso!';
+                } catch (err) {
+                    statusP.textContent = 'Erro ao conectar wallet: ' + err.message;
+                }
+            } else {
+                statusP.textContent = 'Instale a Phantom Wallet para Solana!';
+            }
+        }
+
+        // Pré-visualização da imagem (otimizada: Use FileReader para evitar uploads desnecessários)
+        imageUpload.addEventListener('change', (e) => {
+            imageFile = e.target.files[0];
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    preview.innerHTML = `<img src="${event.target.result}" alt="Pré-visualização">`;
+                };
+                reader.readAsDataURL(imageFile);
+            }
+        });
+
+        // Função para mintar NFT: Passos simplificados para produção.
+        // 1. Upload imagem para IPFS (use uma API como Pinata - substitua com sua chave).
+        // 2. Criar metadata JSON.
+        // 3. Upload metadata para IPFS.
+        // 4. Mintar token SPL com supply=1 (NFT).
+        // 5. Associar metadata via Metaplex (usando createMetadataAccount).
+        async function mintNFT() {
+            if (!walletPublicKey || !imageFile || !nameInput.value || !descriptionInput.value) {
+                statusP.textContent = 'Preencha todos os campos!';
+                return;
+            }
+
+            loadingOverlay.style.display = 'flex';
+            statusP.textContent = 'Mintando NFT...';
+
+            try {
+                // Passo 1: Upload imagem para IPFS (exemplo com fetch para API Pinata - configure sua API key)
+                const formData = new FormData();
+                formData.append('file', imageFile);
+                const ipfsImageRes = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+                    method: 'POST',
+                    headers: { 'pinata_api_key': 'SUA_PINATA_API_KEY', 'pinata_secret_api_key': 'SUA_PINATA_SECRET' },
+                    body: formData
+                });
+                const ipfsImage = await ipfsImageRes.json();
+                const imageUri = `https://gateway.pinata.cloud/ipfs/${ipfsImage.IpfsHash}`;
+
+                // Passo 2: Criar metadata (padrão Metaplex para Solana NFTs)
+                let attributes;
+                try {
+                    attributes = JSON.parse(attributesInput.value || '[]');
+                } catch {
+                    attributes = [];
+                }
+                const metadata = {
+                    name: nameInput.value,
+                    symbol: symbolInput.value,
+                    description: descriptionInput.value,
+                    image: imageUri,
+                    attributes: attributes,
+                    properties: { files: [{ uri: imageUri, type: 'image/png' }] }, // Ajuste tipo se necessário
+                    collection: null,
+                    sellers_fee_basis_points: parseInt(royaltiesInput.value) * 100 // Royalties em basis points (5% = 500)
+                };
+
+                // Passo 3: Upload metadata para IPFS
+                const ipfsMetadataRes = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'pinata_api_key': 'SUA_PINATA_API_KEY', 
+                        'pinata_secret_api_key': 'SUA_PINATA_SECRET' 
+                    },
+                    body: JSON.stringify(metadata)
+                });
+                const ipfsMetadata = await ipfsMetadataRes.json();
+                const metadataUri = `https://gateway.pinata.cloud/ipfs/${ipfsMetadata.IpfsHash}`;
+
+                // Passo 4: Criar mint account (NFT com supply=1)
+                const mintKeypair = solanaWeb3.Keypair.generate();
+                const lamports = await splToken.getMinimumBalanceForRentExemptMint(connection);
+                const createMintAccountIx = solanaWeb3.SystemProgram.createAccount({
+                    fromPubkey: walletPublicKey,
+                    newAccountPubkey: mintKeypair.publicKey,
+                    space: splToken.MINT_SIZE,
+                    lamports,
+                    programId: splToken.TOKEN_PROGRAM_ID,
+                });
+                const initMintIx = splToken.createInitializeMintInstruction(
+                    mintKeypair.publicKey,
+                    0, // Decimais 0 para NFT
+                    walletPublicKey, // Mint authority
+                    walletPublicKey // Freeze authority
+                );
+
+                // Passo 5: Criar associated token account para o owner
+                const tokenAccount = await splToken.getAssociatedTokenAddress(
+                    mintKeypair.publicKey,
+                    walletPublicKey
+                );
+                const createTokenAccountIx = splToken.createAssociatedTokenAccountInstruction(
+                    walletPublicKey,
+                    tokenAccount,
+                    walletPublicKey,
+                    mintKeypair.publicKey
+                );
+
+                // Passo 6: Mintar 1 token para o account
+                const mintToIx = splToken.createMintToInstruction(
+                    mintKeypair.publicKey,
+                    tokenAccount,
+                    walletPublicKey,
+                    1 // Quantidade 1 para NFT
+                );
+
+                // Passo 7: Associar metadata (usando Metaplex Metadata Program - endereço padrão)
+                const metadataPDA = await solanaWeb3.PublicKey.findProgramAddress(
+                    [Buffer.from('metadata'), new solanaWeb3.PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s').toBuffer(), mintKeypair.publicKey.toBuffer()],
+                    new solanaWeb3.PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s') // Metaplex Metadata Program ID
+                );
+                const createMetadataIx = new solanaWeb3.TransactionInstruction({
+                    keys: [
+                        { pubkey: metadataPDA[0], isSigner: false, isWritable: true },
+                        { pubkey: mintKeypair.publicKey, isSigner: false, isWritable: false },
+                        { pubkey: walletPublicKey, isSigner: true, isWritable: false },
+                        { pubkey: walletPublicKey, isSigner: true, isWritable: false },
+                        { pubkey: solanaWeb3.SystemProgram.programId, isSigner: false, isWritable: false },
+                    ],
+                    programId: new solanaWeb3.PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s'),
+                    data: Buffer.from(Uint8Array.of(0, ...new TextEncoder().encode(metadataUri))) // Instrução simplificada para create metadata
+                });
+
+                // Transação completa
+                const transaction = new solanaWeb3.Transaction().add(
+                    createMintAccountIx,
+                    initMintIx,
+                    createTokenAccountIx,
+                    mintToIx,
+                    createMetadataIx
+                );
+                transaction.feePayer = walletPublicKey;
+                transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+                transaction.partialSign(mintKeypair);
+
+                // Assinar e enviar via wallet
+                const signedTx = await window.solana.signTransaction(transaction);
+                const txId = await connection.sendRawTransaction(signedTx.serialize());
+
+                await connection.confirmTransaction(txId);
+                statusP.textContent = `NFT Mintado! Tx ID: ${txId}`;
+            } catch (err) {
+                statusP.textContent = 'Erro ao mintar: ' + err.message;
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // Eventos
+        connectWalletBtn.addEventListener('click', connectWallet);
+        mintButton.addEventListener('click', mintNFT);
+
+        // Otimização: Debounce em inputs para performance em mobile
+        function debounce(fn, delay) {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn(...args), delay);
+            };
+        }
+
+        [nameInput, descriptionInput, symbolInput, attributesInput, royaltiesInput].forEach(input => {
+            input.addEventListener('input', debounce(() => {}, 300)); // Placeholder para validações futuras
+        });
+    </script>
+</body>
+</html>
